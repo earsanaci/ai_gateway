@@ -1,0 +1,25 @@
+[Unit]
+Description=Homelab Operations Gateway
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=aigw
+Group=aigw
+WorkingDirectory=/opt/ai-gateway/src
+Environment=PYTHONPATH=/opt/ai-gateway/src
+EnvironmentFile=/etc/ai-gateway/proxmox.env
+EnvironmentFile=/etc/ai-gateway/gateway.env
+EnvironmentFile=/etc/ai-gateway/homeassistant.env
+EnvironmentFile=/etc/ai-gateway/proxmox-operator.env
+EnvironmentFile=/etc/ai-gateway/proxmox-admin.env
+ExecStart=/opt/ai-gateway/venv/bin/python -m gateway
+LogsDirectory=ai-gateway
+Restart=on-failure
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
