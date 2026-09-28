@@ -55,13 +55,22 @@ COUNT=$(PYTHONPATH="$SRC" GW_AUDIT_LOG=/dev/null $PY -c \
   "import asyncio, gateway.__main__; from gateway.core import mcp; print(len(asyncio.run(mcp.list_tools())))") \
   || rollback "araclar yuklenemedi"
 
+# Yeni servis dosyasinin istedigi EnvironmentFile'lar mevcut mu, kurmadan once kontrol et
+MISSING=""
+for f in $(grep -oP '(?<=EnvironmentFile=)\S+' deploy/ai-gateway.service); do
+  [ -f "$f" ] || MISSING="$MISSING $f"
+done
+[ -z "$MISSING" ] || rollback "eksik ayar dosyasi(lari):$MISSING (once olustur, sonra tekrar dene)"
+
 cp deploy/ai-gateway.service /etc/systemd/system/ai-gateway.service
 systemctl daemon-reload
 systemctl restart ai-gateway
 sleep 4
-systemctl is-active --quiet ai-gateway || rollback "servis baslamadi"
-CODE=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8765/mcp || true)
-[ "$CODE" = "401" ] || rollback "saglik kontrolu basarisiz (HTTP $CODE)"
+systemctl is-active --quiet ai-gateway || rollback "servis baslamadi: $(journalctl -u ai-gateway -n 5 --no-pager -o cat | tr '\n' ' ')"
+PROTO=http
+grep -q '^GW_TLS_CERT=' /etc/ai-gateway/tls.env 2>/dev/null && PROTO=https
+CODE=$(curl -sk -o /dev/null -w '%{http_code}' "$PROTO://127.0.0.1:8765/mcp" || true)
+[ "$CODE" = "401" ] || rollback "saglik kontrolu basarisiz ($PROTO, HTTP $CODE)"
 
 log_audit ok "$COUNT arac"
 echo "Tamam: $(git log -1 --oneline) | $COUNT arac | servis calisiyor"

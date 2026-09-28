@@ -63,5 +63,11 @@ PYTHONPATH=. .venv/bin/python -m pytest -q
 /opt/ai-gateway/src/deploy/deploy.sh
 ```
 Betik: yeni surumu ayri bir klasorde testlerden gecirir (gecmezse canli koda dokunmaz),
-kurar, arac sayisini ve sagligi dogrular, servisi yeniden baslatir. Herhangi bir adim
-basarisizsa otomatik olarak onceki surume doner. Her deneme audit kaydina yazilir.
+kurar, yeni servis dosyasinin istedigi TUM EnvironmentFile'larin (`/etc/ai-gateway/*.env`)
+var oldugunu kontrol eder, arac sayisini ve sagligi (HTTP veya HTTPS, tls.env'e gore) dogrular,
+servisi yeniden baslatir. Herhangi bir adim basarisizsa otomatik olarak onceki surume doner.
+Her deneme audit kaydina yazilir.
+
+Yeni bir `.env` dosyasi gerektiren bir degisiklik (orn. TLS) gonderiyorsan, `deploy.sh`
+koşmadan once o dosyayi konsolda olustur — yoksa betik kurmadan once reddeder, servisi
+bozmaz.

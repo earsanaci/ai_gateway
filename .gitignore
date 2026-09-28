@@ -6,3 +6,4 @@ venv/
 # Gercek sirlar ASLA repoya girmez
 *.env
 !deploy/example.env
+!deploy/example-tls.env

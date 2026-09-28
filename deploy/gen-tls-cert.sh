@@ -12,7 +12,7 @@ done
 openssl req -x509 -nodes -newkey ed25519 -days 3650 \
   -keyout "$OUT/gateway.key" -out "$OUT/gateway.crt" \
   -subj "/CN=ai-gateway" -addext "subjectAltName=$SAN"
-chown root:aigw "$OUT"/gateway.key "$OUT"/gateway.crt
+chgrp aigw "$OUT" "$OUT"/gateway.key "$OUT"/gateway.crt
 chmod 750 "$OUT"; chmod 640 "$OUT/gateway.key" "$OUT/gateway.crt"
 echo "Olusturuldu: $OUT/gateway.crt ($SAN)"
 echo "Parmak izi (SHA256): $(openssl x509 -in "$OUT/gateway.crt" -noout -fingerprint -sha256)"
