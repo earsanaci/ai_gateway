@@ -25,6 +25,18 @@ deploy/                systemd servisi, firewall, deploy betigi
 tests/                 onay ve arac kaydi testleri
 ```
 
+## TLS
+Varsayilan HTTP + Bearer token; ayni LAN'daki bir cihaz (AdGuard/IoT) trafigi dinleyip
+anahtari calabilir. TLS acmak icin (kendinden imzali sertifika, gateway'in genel bir
+alan adi yok):
+```
+deploy/gen-tls-cert.sh 192.168.7.18                 # gateway'in LAN IP'si
+cp deploy/example-tls.env /etc/ai-gateway/tls.env   # yollari kontrol et
+```
+`deploy.sh` bunu otomatik algilar: `GW_TLS_CERT`/`GW_TLS_KEY` tanimliysa gateway HTTPS
+dinler. Sertifikanin genel kismini (`gateway.crt`) istemciye (Mac) kopyalayip ona
+guvenmesini soylemek gerekir; ozel anahtar (`gateway.key`) hicbir yere cikmaz.
+
 ## Audit
 `/var/log/ai-gateway/audit.jsonl`: her satir bir oncekinin SHA-256 ozetini (`prev`) tasir; satir
 silme/degistirme `audit_verify` ile yakalanir. Her satirin ozeti ayrica journald'ye `AUDIT {...}`

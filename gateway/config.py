@@ -27,3 +27,6 @@ AUTO_BACKUP_DIR = os.environ.get("GW_AUTOMATION_BACKUP_DIR", "/var/log/ai-gatewa
 
 if len(GATEWAY_TOKEN) < 32:
     raise SystemExit("GATEWAY_TOKEN en az 32 karakter olmali")
+
+TLS_CERT = os.environ.get("GW_TLS_CERT", "")
+TLS_KEY = os.environ.get("GW_TLS_KEY", "")

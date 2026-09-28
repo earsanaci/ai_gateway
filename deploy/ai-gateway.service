@@ -13,6 +13,7 @@ EnvironmentFile=/etc/ai-gateway/gateway.env
 EnvironmentFile=/etc/ai-gateway/homeassistant.env
 EnvironmentFile=/etc/ai-gateway/proxmox-operator.env
 EnvironmentFile=/etc/ai-gateway/proxmox-admin.env
+EnvironmentFile=/etc/ai-gateway/tls.env
 ExecStart=/opt/ai-gateway/venv/bin/python -m gateway
 LogsDirectory=ai-gateway
 Restart=on-failure
