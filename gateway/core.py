@@ -1,18 +1,11 @@
 """Ortak parcalar: MCP sunucusu, audit, onay deposu."""
 import functools
-import json
 import time
 import uuid
 
 from mcp.server.fastmcp import FastMCP
 
-from gateway.config import AUDIT_LOG
-
-
-def audit(entry):
-    entry.setdefault("ts", time.strftime("%Y-%m-%dT%H:%M:%S%z"))
-    with open(AUDIT_LOG, "a", encoding="utf-8") as f:
-        f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+from gateway.audit import audit  # noqa: F401  (diger moduller buradan alir)
 
 
 def audited(risk="L0"):

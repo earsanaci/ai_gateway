@@ -9,6 +9,8 @@ denetlenebilir sekilde yonetmesi icin MCP sunucusu. Mimari ve kararlar Notion'da
 gateway/
   config.py            ortam degiskenleri (sirlar /etc/ai-gateway/*.env icinde, repoda degil)
   core.py              MCP sunucusu, genel kurallar, audit, onay deposu
+  audit.py             hash zincirli audit + journald tanik kopyasi
+  auditcheck.py        konsol dogrulama araci
   auth.py              Bearer anahtar dogrulamasi
   clients/             Proxmox (reader/operator/admin) ve Home Assistant istemcileri
   tools/
@@ -18,9 +20,20 @@ gateway/
     ha_read.py             HA okuma, kopma raporu, loglar, otomasyonlar
     ha_control.py          HA cihaz kontrolu (her zaman onayli)
     ha_automations.py      HA otomasyon olustur/duzenle/geri al (onayli, yedekli)
+    audit_tools.py         audit_get_recent, audit_verify (salt-okunur)
 deploy/                systemd servisi, firewall, deploy betigi
 tests/                 onay ve arac kaydi testleri
 ```
+
+## Audit
+`/var/log/ai-gateway/audit.jsonl`: her satir bir oncekinin SHA-256 ozetini (`prev`) tasir; satir
+silme/degistirme `audit_verify` ile yakalanir. Her satirin ozeti ayrica journald'ye `AUDIT {...}`
+olarak yazilir (servis kullanicisi journald'yi degistiremez). Konsolda tam kontrol (root):
+```
+cd /opt/ai-gateway/src && PYTHONPATH=. /opt/ai-gateway/venv/bin/python -m gateway.auditcheck
+```
+Betik zinciri dogrular, dosyanin sonundan silinen veya tum zincirin yeniden yazildigi durumlari
+journald kopyasiyla karsilastirarak yakalar. Deploy olaylari `deploy.jsonl` dosyasina yazilir.
 
 ## Kurallar
 - Degistiren her islem: `propose_*` -> kullaniciya "ne anladim" -> acik onay -> `apply_*`.
@@ -37,5 +50,6 @@ PYTHONPATH=. .venv/bin/python -m pytest -q
 ```
 /opt/ai-gateway/src/deploy/deploy.sh
 ```
-Betik: son surumu ceker, bagimliliklari kurar, kodu ve araclari dogrular, servisi yeniden
-baslatir, saglik kontrolu yapar. Herhangi bir adim basarisizsa otomatik olarak onceki surume doner.
+Betik: yeni surumu ayri bir klasorde testlerden gecirir (gecmezse canli koda dokunmaz),
+kurar, arac sayisini ve sagligi dogrular, servisi yeniden baslatir. Herhangi bir adim
+basarisizsa otomatik olarak onceki surume doner. Her deneme audit kaydina yazilir.

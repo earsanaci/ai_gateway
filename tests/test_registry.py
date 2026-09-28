@@ -15,6 +15,7 @@ EXPECTED = {
     "homeassistant_list_automations", "homeassistant_get_automation_config",
     "homeassistant_propose_control", "homeassistant_apply_control",
     "homeassistant_propose_automation_change", "homeassistant_propose_automation_rollback",
+    "audit_get_recent", "audit_verify",
 }
 
 
