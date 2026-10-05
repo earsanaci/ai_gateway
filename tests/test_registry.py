@@ -16,6 +16,8 @@ EXPECTED = {
     "homeassistant_propose_control", "homeassistant_apply_control",
     "homeassistant_propose_automation_change", "homeassistant_propose_automation_rollback",
     "audit_get_recent", "audit_verify",
+    "pbs_get_status", "pbs_list_backup_groups", "pbs_list_snapshots",
+    "pbs_get_recent_tasks", "pbs_get_task_log", "pbs_list_jobs",
 }
 
 

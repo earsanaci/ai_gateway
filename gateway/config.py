@@ -30,3 +30,10 @@ if len(GATEWAY_TOKEN) < 32:
 
 TLS_CERT = os.environ.get("GW_TLS_CERT", "")
 TLS_KEY = os.environ.get("GW_TLS_KEY", "")
+
+# Proxmox Backup Server (istege bagli; tanimli degilse PBS araclari "yapilandirilmamis" der)
+PBS_HOST = os.environ.get("PBS_HOST", "")
+PBS_PORT = int(os.environ.get("PBS_PORT", "8007") or 8007)
+PBS_TOKEN_ID = os.environ.get("PBS_TOKEN_ID", "")
+PBS_TOKEN_SECRET = os.environ.get("PBS_TOKEN_SECRET", "")
+PBS_FINGERPRINT = os.environ.get("PBS_FINGERPRINT", "")

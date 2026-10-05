@@ -40,6 +40,19 @@ git worktree remove --force "$TEST"
 # 2) Kur
 git reset --quiet --hard "$NEW"
 
+# Porta cevap gelene kadar (en fazla ~12sn) dener; TLS baslatmasi HTTP'den yavas olabilir.
+wait_healthy() {
+  local proto=http
+  grep -q '^GW_TLS_CERT=' /etc/ai-gateway/tls.env 2>/dev/null && proto=https
+  local code=000
+  for _ in 1 2 3 4 5 6; do
+    sleep 2
+    code=$(curl -sk -o /dev/null -w '%{http_code}' --max-time 2 "$proto://127.0.0.1:8765/mcp" || true)
+    [ "$code" = "401" ] && { echo "$proto"; return 0; }
+  done
+  echo "$proto $code"; return 1
+}
+
 rollback() {
   echo "HATA: $1 -> onceki surume donuluyor (${OLD:0:7})"
   log_audit rolled_back "$1"
@@ -47,6 +60,8 @@ rollback() {
   $APP/venv/bin/pip install -q -r requirements.txt || true
   cp deploy/ai-gateway.service /etc/systemd/system/ai-gateway.service
   systemctl daemon-reload; systemctl restart ai-gateway
+  systemctl is-active --quiet ai-gateway || echo "UYARI: geri donus sonrasi servis hala ayakta degil, elle bak: systemctl status ai-gateway"
+  wait_healthy >/dev/null || echo "UYARI: geri donus sonrasi saglik kontrolu de basarisiz, elle bak: journalctl -u ai-gateway -n 40"
   exit 1
 }
 
@@ -58,6 +73,7 @@ COUNT=$(PYTHONPATH="$SRC" GW_AUDIT_LOG=/dev/null $PY -c \
 # Yeni servis dosyasinin istedigi EnvironmentFile'lar mevcut mu, kurmadan once kontrol et
 MISSING=""
 for f in $(grep -oP '(?<=EnvironmentFile=)\S+' deploy/ai-gateway.service); do
+  case "$f" in -*) continue ;; esac   # "-" ile baslayanlar istege bagli (orn. tls.env, pbs.env)
   [ -f "$f" ] || MISSING="$MISSING $f"
 done
 [ -z "$MISSING" ] || rollback "eksik ayar dosyasi(lari):$MISSING (once olustur, sonra tekrar dene)"
@@ -65,12 +81,9 @@ done
 cp deploy/ai-gateway.service /etc/systemd/system/ai-gateway.service
 systemctl daemon-reload
 systemctl restart ai-gateway
-sleep 4
+sleep 2
 systemctl is-active --quiet ai-gateway || rollback "servis baslamadi: $(journalctl -u ai-gateway -n 5 --no-pager -o cat | tr '\n' ' ')"
-PROTO=http
-grep -q '^GW_TLS_CERT=' /etc/ai-gateway/tls.env 2>/dev/null && PROTO=https
-CODE=$(curl -sk -o /dev/null -w '%{http_code}' "$PROTO://127.0.0.1:8765/mcp" || true)
-[ "$CODE" = "401" ] || rollback "saglik kontrolu basarisiz ($PROTO, HTTP $CODE)"
+RESULT=$(wait_healthy) || rollback "saglik kontrolu basarisiz ($RESULT)"
 
 log_audit ok "$COUNT arac"
 echo "Tamam: $(git log -1 --oneline) | $COUNT arac | servis calisiyor"

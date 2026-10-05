@@ -21,9 +21,16 @@ gateway/
     ha_control.py          HA cihaz kontrolu (her zaman onayli)
     ha_automations.py      HA otomasyon olustur/duzenle/geri al (onayli, yedekli)
     audit_tools.py         audit_get_recent, audit_verify (salt-okunur)
+    pbs_read.py            Proxmox Backup Server okuma (durum, gruplar, snapshot, gorevler, isler)
 deploy/                systemd servisi, firewall, deploy betigi
 tests/                 onay ve arac kaydi testleri
 ```
+
+## Proxmox Backup Server
+Istege bagli: `/etc/ai-gateway/pbs.env` varsa PBS araclari calisir. Token yalnizca okuma
+yetkili olmali (PBS'te rol `Audit`, yol `/`, hem kullaniciya hem token'a). PBS'in kendinden
+imzali sertifikasi `PBS_FINGERPRINT` ile sabitlenir; eslesmezse baglanilmaz. PBS kapaliyken
+(Wake-on-LAN) araclar cokmez, "PBS su an kapali" der.
 
 ## TLS
 Varsayilan HTTP + Bearer token; ayni LAN'daki bir cihaz (AdGuard/IoT) trafigi dinleyip
