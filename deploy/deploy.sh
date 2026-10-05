@@ -21,6 +21,14 @@ NEW=$(git rev-parse origin/main)
 if [ "$OLD" = "$NEW" ] && [ "${1:-}" != "--force" ]; then
   echo "Zaten guncel: $(git log -1 --oneline)"; exit 0
 fi
+# Betigin kendisi degistiyse, kurulumdan once YENI surumle yeniden basla (eski betik yeni
+# kurallari bilmez; orn. HTTPS saglik kontrolu). Yalnizca bir kez yapilir.
+if [ -z "${DEPLOY_REEXEC:-}" ] && ! git diff --quiet "$OLD" "$NEW" -- deploy/deploy.sh; then
+  echo "deploy.sh guncellenmis; yeni surumle yeniden baslatiliyor"
+  TMP_SELF=$(mktemp)
+  git show "$NEW:deploy/deploy.sh" > "$TMP_SELF"
+  DEPLOY_REEXEC=1 exec bash "$TMP_SELF" "$@"
+fi
 echo "Guncelleniyor: $(git log -1 --format='%h %s' "$OLD") -> $(git log -1 --format='%h %s' "$NEW")"
 
 # 1) Yeni surumu ayri bir klasorde test et; testler gecmeden canli koda dokunma

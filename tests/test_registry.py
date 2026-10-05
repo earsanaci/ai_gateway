@@ -18,6 +18,7 @@ EXPECTED = {
     "audit_get_recent", "audit_verify",
     "pbs_get_status", "pbs_list_backup_groups", "pbs_list_snapshots",
     "pbs_get_recent_tasks", "pbs_get_task_log", "pbs_list_jobs",
+    "pbs_get_journal", "pbs_get_disk_health",
 }
 
 

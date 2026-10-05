@@ -21,7 +21,8 @@ gateway/
     ha_control.py          HA cihaz kontrolu (her zaman onayli)
     ha_automations.py      HA otomasyon olustur/duzenle/geri al (onayli, yedekli)
     audit_tools.py         audit_get_recent, audit_verify (salt-okunur)
-    pbs_read.py            Proxmox Backup Server okuma (durum, gruplar, snapshot, gorevler, isler)
+    pbs_read.py            Proxmox Backup Server okuma (durum, gruplar, snapshot, gorevler, isler,
+                           sistem gunlugu, disk/SMART sagligi)
 deploy/                systemd servisi, firewall, deploy betigi
 tests/                 onay ve arac kaydi testleri
 ```

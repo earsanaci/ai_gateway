@@ -120,3 +120,82 @@ def pbs_list_jobs() -> dict:
         except Exception as e:  # eski surumlerde uc nokta yoksa
             out[kind] = f"okunamadi: {type(e).__name__}"
     return out
+
+
+# ---------------------------------------------------------------- teshis: journal ve disk sagligi
+import re
+from datetime import datetime, timezone
+
+
+def _to_epoch(s):
+    """ISO zaman ("2026-10-05T02:55:00+03:00") veya epoch saniye kabul eder."""
+    if s is None or s == "":
+        return None
+    if isinstance(s, (int, float)) or str(s).isdigit():
+        return int(s)
+    dt = datetime.fromisoformat(str(s))
+    if dt.tzinfo is None:
+        raise ValueError("Zaman dilimi belirt (orn. +03:00)")
+    return int(dt.astimezone(timezone.utc).timestamp())
+
+
+@mcp.tool()
+@audited()
+def pbs_get_journal(since: str = "", until: str = "", last_hours: int = 2,
+                    pattern: str = "", limit: int = 200) -> dict:
+    """PBS'in sistem gunlugunu (journal; kernel, systemd, servisler) okur. Zaman araligi icin
+    since/until ISO formatinda (orn. "2026-10-05T02:55:00+03:00") verilebilir; verilmezse son
+    last_hours saat. pattern: buyuk/kucuk harf duyarsiz duzenli ifade ile satir suzme
+    (orn. "usb|I/O error|watchdog"). En fazla 1000 satir doner. Salt-okunur."""
+    limit = max(1, min(int(limit), 1000))
+    start = _to_epoch(since)
+    end = _to_epoch(until)
+    if start is None:
+        start = int(time.time() - max(1, min(int(last_hours), 24 * 14)) * 3600)
+    params = {"since": start}
+    if end:
+        params["until"] = end
+    rx = None
+    if pattern:
+        if len(pattern) > 200:
+            raise ValueError("pattern cok uzun")
+        rx = re.compile(pattern, re.IGNORECASE)
+    lines = pbs_get(f"/nodes/{NODE}/journal", params) or []
+    lines = [l if isinstance(l, str) else str(l) for l in lines]
+    matched = [l for l in lines if rx.search(l)] if rx else lines
+    return {"window_start": start, "window_end": end, "total_lines": len(lines),
+            "matched": len(matched), "lines": matched[-limit:],
+            "note": "Sistem aniden donduysa son birkac dakikanin kayitlari diske yazilamamis olabilir."}
+
+
+SMART_KEYS = ("Reallocated", "Pending", "Uncorrectable", "CRC", "Power_On_Hours", "Wear",
+              "Percentage Used", "Media and Data Integrity", "Unsafe Shutdowns", "Temperature")
+
+
+@mcp.tool()
+@audited()
+def pbs_get_disk_health(disk: str = "") -> dict:
+    """PBS'teki disklerin listesi ve SMART saglik durumu (model, boyut, baglanti, kullanim,
+    asinma). disk verilirse (orn. "sdc") o diskin onemli SMART degerleri de gelir. Salt-okunur."""
+    out = {"disks": []}
+    for d in pbs_get(f"/nodes/{NODE}/disks/list") or []:
+        out["disks"].append({k: d.get(k) for k in ("name", "model", "vendor", "serial", "size",
+                                                   "disk-type", "used", "status", "wearout", "devpath")
+                             if k in d})
+    if disk:
+        if not re.fullmatch(r"[a-z]{2,4}[0-9a-z]{0,6}", disk):
+            raise ValueError("Gecersiz disk adi")
+        try:
+            sm = pbs_get(f"/nodes/{NODE}/disks/smart", {"disk": f"/dev/{disk}"}) or {}
+        except PermissionError:
+            raise
+        except Exception as e:
+            out["smart"] = f"okunamadi: {type(e).__name__} (USB kutular SMART'i gecirmeyebilir)"
+            return out
+        attrs = [a for a in sm.get("attributes") or []
+                 if any(k.lower() in str(a.get("name", "")).lower() for k in SMART_KEYS)]
+        out["smart"] = {"health": sm.get("status"), "type": sm.get("type"),
+                        "attributes": [{k: a.get(k) for k in ("name", "value", "raw", "worst", "threshold", "fail")
+                                        if k in a} for a in attrs][:30],
+                        "text": (sm.get("text") or "")[:1500] or None}
+    return out
