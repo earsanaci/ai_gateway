@@ -20,6 +20,7 @@ gateway/
     ha_read.py             HA okuma, kopma raporu, loglar, otomasyonlar
     ha_control.py          HA cihaz kontrolu (her zaman onayli)
     ha_automations.py      HA otomasyon olustur/duzenle/geri al (onayli, yedekli)
+    ha_entities.py         HA entity adi / entity_id / alan degistirme (onayli, WebSocket)
     audit_tools.py         audit_get_recent, audit_verify (salt-okunur)
     pbs_read.py            Proxmox Backup Server okuma (durum, gruplar, snapshot, gorevler, isler,
                            sistem gunlugu, disk/SMART sagligi)
