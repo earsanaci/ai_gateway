@@ -85,11 +85,11 @@ def homeassistant_propose_control(actions: list[dict]) -> dict:
 @mcp.tool()
 @audited(risk="L1")
 def homeassistant_apply_control(approval_id: str) -> dict:
-    """homeassistant_propose_control, homeassistant_propose_automation_change veya
-    homeassistant_propose_automation_rollback ile onerilmis ve KULLANICI TARAFINDAN
+    """homeassistant_propose_control, homeassistant_propose_automation_change,
+    homeassistant_propose_automation_rollback veya homeassistant_propose_entity_update ile onerilmis ve KULLANICI TARAFINDAN
     ONAYLANMIS islemi uygular ve sonucu dogrular. Yalnizca acik onaydan sonra cagir."""
     p = PENDING.get(approval_id)
-    if p is None or p.get("kind") not in ("ha_control", "ha_automation"):
+    if p is None or p.get("kind") not in ("ha_control", "ha_automation", "ha_entity"):
         raise PermissionError("Onay bulunamadi, kullanildi veya suresi doldu")
     PENDING.pop(approval_id, None)
     if p["expires"] < time.time():
@@ -97,6 +97,9 @@ def homeassistant_apply_control(approval_id: str) -> dict:
     if p["kind"] == "ha_automation":
         from gateway.tools.ha_automations import _apply_automation_change
         return _apply_automation_change(approval_id, p)
+    if p["kind"] == "ha_entity":
+        from gateway.tools.ha_entities import _apply_entity_update
+        return _apply_entity_update(approval_id, p)
     results = []
     for a in p["plan"]:
         ha_post(f"/services/{a['domain']}/{a['service']}", {"entity_id": a["entity_id"], **a["data"]})

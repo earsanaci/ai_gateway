@@ -59,6 +59,33 @@ def _device_info(entity_ids):
             out[parts[0]] = {"manufacturer": parts[1], "model": parts[2], "device": parts[3]}
     return out
 
+def ha_ws(commands):
+    """HA WebSocket API'sine tek baglantida sirayla komut gonderir, sonuclari liste olarak dondurur.
+    Entity/cihaz/alan kayitlari (registry) yalnizca WebSocket ile okunup degistirilebilir."""
+    if not HA_URL or not HA_TOKEN:
+        raise RuntimeError("Home Assistant yapilandirilmamis")
+    from websockets.sync.client import connect
+    url = HA_URL.replace("https://", "wss://", 1).replace("http://", "ws://", 1) + "/api/websocket"
+    results = []
+    with connect(url, open_timeout=10, close_timeout=5, max_size=None) as ws:
+        if json.loads(ws.recv(timeout=10)).get("type") != "auth_required":
+            raise RuntimeError("HA WebSocket beklenmedik yanit verdi")
+        ws.send(json.dumps({"type": "auth", "access_token": HA_TOKEN}))
+        if json.loads(ws.recv(timeout=10)).get("type") != "auth_ok":
+            raise PermissionError("HA WebSocket kimlik dogrulamasi basarisiz")
+        for i, cmd in enumerate(commands, start=1):
+            ws.send(json.dumps({"id": i, **cmd}))
+            while True:
+                msg = json.loads(ws.recv(timeout=30))
+                if msg.get("id") == i and msg.get("type") == "result":
+                    break
+            if not msg.get("success"):
+                err = msg.get("error") or {}
+                raise ValueError(f"HA reddetti ({cmd.get('type')}): {err.get('message', err)}")
+            results.append(msg.get("result"))
+    return results
+
+
 HA_READ_TOOLS = {"homeassistant__GetLiveContext"}
 
 
